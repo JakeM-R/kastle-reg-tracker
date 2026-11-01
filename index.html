@@ -145,7 +145,8 @@
           <div><div class="lbl">FCC terms</div><textarea id="tFCC"></textarea></div>
           <div><div class="lbl">FHFA</div><p>All FHFA documents are included. Volume is low and every item touches mortgage finance.</p></div>
         </div>
-        <p class="toggle"><input type="checkbox" id="unfiltered"> <label for="unfiltered">Show unfiltered: every CFPB and FHFA document in the window, plus every FCC document the calling-terms search returned</label></p>
+        <p class="toggle"><input type="checkbox" id="unfiltered"> <label for="unfiltered">Show unfiltered: skip the keyword match (every CFPB and FHFA document, plus every FCC document the calling-terms search returned)</label></p>
+        <p class="toggle"><input type="checkbox" id="hideAdmin" checked> <label for="hideAdmin">Exclude administrative notices (titles containing: <span id="adminList"></span>)</label></p>
         <p class="toggle"><input type="checkbox" id="showTypes" checked> <label for="showTypes">Include notices (untick for final and proposed rules only)</label></p>
       </details>
     </div>
@@ -166,6 +167,7 @@
     CFPB:["RESPA","Real Estate Settlement","Regulation X","Truth in Lending","Regulation Z","mortgage","servicing","servicer","loss mitigation","Equal Credit","Regulation B","Fair Credit Reporting","Regulation V","debt collection","Regulation F","Home Mortgage Disclosure","HMDA"],
     FCC:["Telephone Consumer Protection","TCPA","robocall","robotext","prerecorded voice","artificial voice","AI-generated","autodialer","call blocking","caller ID"]
   };
+  var ADMIN=["Privacy Act of 1974","System of Records","Sunshine Act","Open Commission Meeting","Information Collection","Proposed Collection","Comment Request","Paperwork Reduction","Submission for OMB Review","Agency Meeting"];
   var FCC_QUERIES=["\"Telephone Consumer Protection\"","robocall","\"prerecorded voice\"","\"artificial intelligence\" calls"];
   var STORE="krt-records-v1", TSTORE="krt-terms-v1";
   var state={win:90,ag:"all",docs:[],source:"none",checkedAt:null};
@@ -212,6 +214,7 @@
       if(d.publication_date<since) return false;
       if(state.ag!=="all" && d._ag!==state.ag) return false;
       if(!notices && d.type==="Notice") return false;
+      if($("hideAdmin").checked && ADMIN.some(function(t){return (d.title||"").toLowerCase().indexOf(t.toLowerCase())>=0;})) return false;
       return unf || matches(d);
     }).sort(function(a,b){return b.publication_date.localeCompare(a.publication_date);});
   }
@@ -284,7 +287,8 @@
     state.win=+b.dataset.win; document.querySelectorAll("[data-win]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b));}); render();});});
   document.querySelectorAll("[data-ag]").forEach(function(b){b.addEventListener("click",function(){
     state.ag=b.dataset.ag; document.querySelectorAll("[data-ag]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b));}); render();});});
-  ["unfiltered","showTypes"].forEach(function(id){$(id).addEventListener("change",render);});
+  $("adminList").textContent=ADMIN.join(", ");
+  ["unfiltered","showTypes","hideAdmin"].forEach(function(id){$(id).addEventListener("change",render);});
   ["tCFPB","tFCC"].forEach(function(id){$(id).addEventListener("input",function(){
     terms={CFPB:$("tCFPB").value.split("\n").map(function(s){return s.trim();}).filter(Boolean),FCC:$("tFCC").value.split("\n").map(function(s){return s.trim();}).filter(Boolean)};
     ls(TSTORE,terms); render();});});
